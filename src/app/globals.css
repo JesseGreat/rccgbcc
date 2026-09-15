@@ -1,0 +1,222 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-heading: var(--font-sans);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-soft: var(--success-soft);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/*
+ * Church brand (rccgbcc.org): logo, typeface and the black-to-royal-blue hero band.
+ * Buttons and text use the deeper navy #1b3a6b the church prefers. Green is reserved for success states only.
+ */
+:root {
+  color-scheme: light;
+
+  --background: #f4f4f7;
+  --foreground: #1a1a1a;
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a1a;
+  --primary: #1b3a6b;
+  --primary-foreground: #ffffff;
+  --secondary: #ececf1;
+  --secondary-foreground: #2a2b31;
+  --muted: #ececf1;
+  --muted-foreground: #5f6168;
+  --accent: #e7edf6;
+  --accent-foreground: #14305a;
+  --destructive: #b42318;
+  --border: #e2e2e8;
+  --input: #d2d3dc;
+  --ring: #1b3a6b;
+
+  --success: #1d7a46;
+  --success-foreground: #ffffff;
+  --success-soft: #e5f3ea;
+
+  --chart-1: #2c5190;
+  --chart-2: #5b7fb5;
+  --chart-3: #9db4d6;
+  --chart-4: #5b6b7a;
+  --chart-5: #a3a09a;
+  --radius: 0.75rem;
+
+  --sidebar: #eeeef3;
+  --sidebar-foreground: #1a1a1a;
+  --sidebar-primary: #1b3a6b;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e6e7ee;
+  --sidebar-accent-foreground: #1a1a1a;
+  --sidebar-border: #e2e2e8;
+  --sidebar-ring: #1b3a6b;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-size: 1.0625rem;
+    line-height: 1.5;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  /* iOS zooms into inputs under 16px. Never let that happen. */
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
+/* The rccgbcc.org hero band: black fading into royal blue. */
+@utility brand-hero {
+  background: linear-gradient(180deg, #0e0d0d 0%, #0e0d0d 38%, #06044d 72%, #0913d5 100%);
+}
+@utility brand-hero-flat {
+  background: linear-gradient(90deg, #0e0d0d 0%, #06044d 55%, #0913d5 100%);
+}
+
+@utility safe-px {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+@utility safe-pb {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+@utility safe-pt {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+/* Success check: a stroke that draws itself. CSS only, no animation library. */
+@keyframes draw-check {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes pop-in {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes soft-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--success) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 8px color-mix(in oklab, var(--success) 0%, transparent);
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@utility animate-draw-check {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: draw-check 0.45s 0.2s ease-out forwards;
+}
+@utility animate-pop-in {
+  animation: pop-in 0.4s ease-out both;
+}
+@utility animate-soft-pulse {
+  animation: soft-pulse 2s ease-in-out infinite;
+}
+@utility animate-sheet-up {
+  animation: sheet-up 0.22s ease-out both;
+}
+@utility animate-fade-in {
+  animation: fade-in 0.18s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .animate-draw-check {
+    stroke-dashoffset: 0;
+  }
+}
