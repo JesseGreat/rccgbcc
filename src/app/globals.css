@@ -190,6 +190,36 @@
   }
 }
 
+@keyframes toast-in {
+  from {
+    transform: translateY(1rem) scale(0.97);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+@keyframes rise-in {
+  from {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@utility animate-toast-in {
+  animation: toast-in 0.22s ease-out both;
+}
+/* List items ease in one after another: set --i on each item. */
+@utility animate-rise-in {
+  animation: rise-in 0.28s ease-out both;
+  animation-delay: calc(min(var(--i, 0), 12) * 30ms);
+}
+
 @utility animate-draw-check {
   stroke-dasharray: 48;
   stroke-dashoffset: 48;

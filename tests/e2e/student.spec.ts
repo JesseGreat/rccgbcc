@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import {
   attendanceToday,
@@ -94,6 +94,12 @@ test("device cap: a calm explanation, and nothing is written", async ({ page }) 
   expect(await attendanceToday(second)).toHaveLength(0);
 });
 
+async function fillRegistration(page: Page) {
+  await page.getByRole("radio", { name: "Young Adult" }).click();
+  await page.getByRole("radio", { name: "Female" }).click();
+  await page.getByLabel("Phone number").fill("0803 123 4567");
+}
+
 test("add yourself: possible duplicate prompt, then add as new and marked present", async ({ browser }) => {
   await openWindow();
   await setDeviceCap(4);
@@ -101,7 +107,13 @@ test("add yourself: possible duplicate prompt, then add as new and marked presen
 
   const typo = kid.slice(0, -1); // one letter off an existing name
   await page.goto(`/class/${teensId}/add?name=${encodeURIComponent(typo)}`);
-  await page.getByRole("button", { name: "Add me and mark present" }).click();
+  await expect(page.getByRole("heading", { name: "Sunday School Students Registration Form" })).toBeVisible();
+
+  // Age, sex and phone are all required.
+  await page.getByRole("button", { name: "Register and mark me present" }).click();
+  await expect(page.getByRole("alert")).toHaveText("Please choose Adult or Young Adult.");
+  await fillRegistration(page);
+  await page.getByRole("button", { name: "Register and mark me present" }).click();
   await expect(page.getByRole("heading", { name: "Is this you?" })).toBeVisible();
   await expect(page.getByRole("button", { name: new RegExp(kid) })).toBeVisible();
 
@@ -111,7 +123,8 @@ test("add yourself: possible duplicate prompt, then add as new and marked presen
 
   // Exact name: no "add as new" escape hatch.
   await page.goto(`/class/${teensId}/add?name=${encodeURIComponent(kid.toUpperCase())}`);
-  await page.getByRole("button", { name: "Add me and mark present" }).click();
+  await fillRegistration(page);
+  await page.getByRole("button", { name: "Register and mark me present" }).click();
   await expect(page.getByRole("heading", { name: "Is this you?" })).toBeVisible();
   await expect(page.getByRole("button", { name: "No, add me as new" })).toHaveCount(0);
 });

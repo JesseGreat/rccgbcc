@@ -159,6 +159,7 @@ export type Database = {
           id: string;
           is_active: boolean;
           role: "super_admin" | "teacher";
+          staff_title: "teacher" | "assistant_teacher";
         };
         Insert: {
           class_id?: string | null;
@@ -168,6 +169,7 @@ export type Database = {
           id: string;
           is_active?: boolean;
           role: "super_admin" | "teacher";
+          staff_title?: "teacher" | "assistant_teacher";
         };
         Update: {
           class_id?: string | null;
@@ -177,6 +179,7 @@ export type Database = {
           id?: string;
           is_active?: boolean;
           role?: "super_admin" | "teacher";
+          staff_title?: "teacher" | "assistant_teacher";
         };
         Relationships: [
           {
@@ -257,12 +260,61 @@ export type Database = {
           },
         ];
       };
+      student_remarks: {
+        Row: {
+          class_id: string;
+          created_at: string;
+          id: string;
+          remark: string;
+          service_date: string;
+          student_id: string;
+          updated_at: string;
+          written_by: string | null;
+        };
+        Insert: {
+          class_id?: string;
+          created_at?: string;
+          id?: string;
+          remark: string;
+          service_date: string;
+          student_id: string;
+          updated_at?: string;
+          written_by?: string | null;
+        };
+        Update: {
+          class_id?: string;
+          created_at?: string;
+          id?: string;
+          remark?: string;
+          service_date?: string;
+          student_id?: string;
+          updated_at?: string;
+          written_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "student_remarks_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "student_remarks_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       students: {
         Row: {
           age_group: string | null;
           class_id: string;
           created_at: string;
           created_by: string;
+          entry_date: string | null;
           full_name: string;
           gender: string | null;
           id: string;
@@ -275,6 +327,7 @@ export type Database = {
           class_id: string;
           created_at?: string;
           created_by?: string;
+          entry_date?: string | null;
           full_name: string;
           gender?: string | null;
           id?: string;
@@ -287,6 +340,7 @@ export type Database = {
           class_id?: string;
           created_at?: string;
           created_by?: string;
+          entry_date?: string | null;
           full_name?: string;
           gender?: string | null;
           id?: string;
@@ -300,6 +354,57 @@ export type Database = {
             columns: ["class_id"];
             isOneToOne: false;
             referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      teacher_attendance: {
+        Row: {
+          class_id: string;
+          id: string;
+          marked_at: string;
+          profile_id: string;
+          remarks: string | null;
+          service_date: string;
+          source: "self" | "admin";
+          staff_title: "teacher" | "assistant_teacher";
+          topic: string | null;
+        };
+        Insert: {
+          class_id?: string;
+          id?: string;
+          marked_at?: string;
+          profile_id: string;
+          remarks?: string | null;
+          service_date?: string;
+          source?: "self" | "admin";
+          staff_title?: "teacher" | "assistant_teacher";
+          topic?: string | null;
+        };
+        Update: {
+          class_id?: string;
+          id?: string;
+          marked_at?: string;
+          profile_id?: string;
+          remarks?: string | null;
+          service_date?: string;
+          source?: "self" | "admin";
+          staff_title?: "teacher" | "assistant_teacher";
+          topic?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "teacher_attendance_class_id_fkey";
+            columns: ["class_id"];
+            isOneToOne: false;
+            referencedRelation: "classes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "teacher_attendance_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];
@@ -318,11 +423,13 @@ export type Database = {
     Functions: {
       add_student: {
         Args: {
+          p_age_group: string;
           p_class_id: string;
-          p_device_hash?: string;
+          p_device_hash: string;
           p_force?: boolean;
           p_full_name: string;
-          p_phone?: string;
+          p_gender: string;
+          p_phone: string;
         };
         Returns: Json;
       };

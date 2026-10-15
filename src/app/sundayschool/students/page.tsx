@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatMediumDate } from "@/lib/attendance/dates";
 import { localDate } from "@/lib/attendance/format";
 import { requireSuperAdmin } from "@/lib/auth/session";
+import { ageGroupLabel, sexLabel } from "@/lib/forms/labels";
 import { fetchAll } from "@/lib/db/fetch-all";
 
 export const metadata: Metadata = { title: "Students" };
@@ -24,7 +25,7 @@ export default async function StudentsAdminPage(props: PageProps<"/sundayschool/
 
   let listQuery = supabase
     .from("students")
-    .select("id, full_name, phone, gender, age_group, class_id, is_active, created_by, created_at, classes(name)", {
+    .select("id, full_name, phone, gender, age_group, entry_date, class_id, is_active, created_by, created_at, classes(name)", {
       count: "exact",
     })
     .order("full_name")
@@ -175,6 +176,8 @@ export default async function StudentsAdminPage(props: PageProps<"/sundayschool/
               <p className="text-sm text-muted-foreground">
                 {[
                   s.classes?.name,
+                  ageGroupLabel(s.age_group),
+                  sexLabel(s.gender),
                   s.phone,
                   `${attendanceCount.get(s.id) ?? 0} attended`,
                   `added ${formatMediumDate(localDate(s.created_at, timeZone))}${s.created_by === "self" ? " by themselves" : ""}`,

@@ -51,7 +51,7 @@ export async function loadAttendanceMatrix(
     fetchAll((a, b) => {
       let q = supabase
         .from("students")
-        .select("id, full_name, is_active, created_at, class_id, classes(name)")
+        .select("id, full_name, gender, is_active, created_at, class_id, classes(name)")
         .order("id")
         .range(a, b);
       if (opts.classIds !== "all") q = q.in("class_id", opts.classIds);
@@ -87,6 +87,8 @@ export async function loadAttendanceMatrix(
       id: s.id,
       fullName: s.full_name,
       isActive: s.is_active,
+      gender: s.gender,
+      classId: s.class_id,
       createdDate: earliest(localDate(s.created_at, settings.timezone), firstMarkByStudent.get(s.id)),
       className: opts.classIds === "all" || opts.classIds.length > 1 ? (s.classes?.name ?? "") : undefined,
     })),

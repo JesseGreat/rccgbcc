@@ -16,6 +16,7 @@ const createSchema = z.object({
   fullName: z.string().min(2, "Enter their name.").max(100),
   email: z.email("Enter a valid email address.").transform((e) => e.toLowerCase()),
   classId: z.uuid("Choose a class."),
+  staffTitle: z.enum(["teacher", "assistant_teacher"], "Choose Teacher or Assistant Teacher."),
   password,
 });
 
@@ -34,7 +35,7 @@ export async function createTeacher(_prev: FormState, formData: FormData): Promi
   const { supabase, profile: me } = await requireSuperAdmin();
   const parsed = createSchema.safeParse(formValues(formData));
   if (!parsed.success) return fromZodError(parsed.error);
-  const { fullName, email, classId, password: pw } = parsed.data;
+  const { fullName, email, classId, staffTitle, password: pw } = parsed.data;
 
   const { data: cls } = await supabase.from("classes").select("id, name, is_active").eq("id", classId).maybeSingle();
   if (!cls) return fail("That class doesn't exist.", { classId: "Choose a class." });
@@ -59,6 +60,7 @@ export async function createTeacher(_prev: FormState, formData: FormData): Promi
     full_name: fullName,
     email,
     role: "teacher",
+    staff_title: staffTitle,
     class_id: classId,
   });
   if (profileError) {
@@ -67,7 +69,13 @@ export async function createTeacher(_prev: FormState, formData: FormData): Promi
     return unexpected("createTeacher profile", profileError);
   }
 
-  await audit(me.id, "teachers.create", created.user.id, { email, full_name: fullName, class_id: classId, class_name: cls.name });
+  await audit(me.id, "teachers.create", created.user.id, {
+    email,
+    full_name: fullName,
+    staff_title: staffTitle,
+    class_id: classId,
+    class_name: cls.name,
+  });
   refresh();
   return ok(`${fullName} can now sign in to ${cls.name} with ${email} and this password:`, pw);
 }
@@ -109,6 +117,27 @@ export async function reassignTeacherClass(_prev: FormState, formData: FormData)
   if (!data?.length) return fail("Only teacher accounts have a class.");
   refresh();
   return ok("Class updated. They'll see the new class next time a page loads.");
+}
+
+export async function setTeacherTitle(_prev: FormState, formData: FormData): Promise<FormState> {
+  const { supabase } = await requireSuperAdmin();
+  const values = formValues(formData);
+  const userId = z.uuid().safeParse(values.userId);
+  const title = z.enum(["teacher", "assistant_teacher"]).safeParse(values.staffTitle);
+  if (!userId.success) return fail("Unknown account.");
+  if (!title.success) return fail("Choose Teacher or Assistant Teacher.", { staffTitle: "Choose a title." });
+
+  // Audited by the profiles trigger. Past teachers'-form entries keep the title they had that day.
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ staff_title: title.data })
+    .eq("id", userId.data)
+    .eq("role", "teacher")
+    .select("id");
+  if (error) return unexpected("setTeacherTitle", error);
+  if (!data?.length) return fail("Only teacher accounts have a title.");
+  refresh();
+  return ok("Title updated.");
 }
 
 export async function setTeacherActive(userId: string, active: boolean): Promise<FormState> {

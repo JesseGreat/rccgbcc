@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 
 import { fail, formValues, fromZodError, ok, unexpected, type FormState } from "@/lib/admin/form";
+import { isIsoDate } from "@/lib/attendance/dates";
 import { requireSuperAdmin } from "@/lib/auth/session";
 import type { MergeStudentsResult } from "@/lib/db/types";
 
@@ -19,7 +20,12 @@ const studentSchema = z.object({
     .optional()
     .default(""),
   gender: z.enum(["", "male", "female"]).optional().default(""),
-  ageGroup: z.string().max(40).optional().default(""),
+  ageGroup: z.enum(["", "adult", "young_adult"]).optional().default(""),
+  entryDate: z
+    .string()
+    .refine((v) => !v || isIsoDate(v), "Choose a valid date.")
+    .optional()
+    .default(""),
 });
 
 const NAME_TAKEN = fail("Someone with that name is already in that class. Consider merging the two records.", {
@@ -38,6 +44,7 @@ export async function createStudent(_prev: FormState, formData: FormData): Promi
     phone: d.phone || null,
     gender: d.gender || null,
     age_group: d.ageGroup || null,
+    entry_date: d.entryDate || null,
   });
   if (error?.code === "23505") return NAME_TAKEN;
   if (error) return unexpected("createStudent", error);
@@ -63,6 +70,7 @@ export async function updateStudent(_prev: FormState, formData: FormData): Promi
       phone: d.phone || null,
       gender: d.gender || null,
       age_group: d.ageGroup || null,
+      entry_date: d.entryDate || null,
     })
     .eq("id", id.data);
   if (error?.code === "23505") return NAME_TAKEN;

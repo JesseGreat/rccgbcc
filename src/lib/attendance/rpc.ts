@@ -63,14 +63,18 @@ export async function markAttendance(
 export async function addStudent(input: {
   classId: string;
   fullName: string;
-  phone: string | null;
+  phone: string;
+  gender: string;
+  ageGroup: string;
   deviceHash: string;
   force: boolean;
 }): Promise<RpcResult<AddStudentResult>> {
   const { data, error } = await getSupabaseAdmin().rpc("add_student", {
     p_class_id: input.classId,
     p_full_name: input.fullName,
-    p_phone: input.phone ?? undefined,
+    p_phone: input.phone,
+    p_gender: input.gender,
+    p_age_group: input.ageGroup,
     p_device_hash: input.deviceHash,
     p_force: input.force,
   });

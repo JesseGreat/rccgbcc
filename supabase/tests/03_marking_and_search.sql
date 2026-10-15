@@ -217,24 +217,24 @@ begin
   select count(*) into v_before from public.students;
 
   -- Exact (normalised) name: never inserts, even with force.
-  r := public.add_student('00000000-0000-0000-0000-0000000000c1', '  chidi   OKAFOR. ', null, 'device-addaddaddaddadd', true);
+  r := public.add_student('00000000-0000-0000-0000-0000000000c1', '  chidi   OKAFOR. ', '0803 000 0000', 'female', 'adult', 'device-addaddaddaddadd', true);
   perform pg_temp.assert(r ->> 'status' = 'possible_duplicate', 'exact name -> possible_duplicate, got ' || r::text);
   perform pg_temp.assert((r ->> 'exact_match')::boolean, 'exact_match flag set');
   perform pg_temp.assert(r -> 'matches' -> 0 ->> 'id' = '00000000-0000-0000-0000-0000000005a1', 'match is Chidi');
   perform pg_temp.assert((r -> 'matches' -> 0 ->> 'already_marked_today')::boolean, 'match reports already marked');
 
   -- Close name: possible_duplicate without insert.
-  r := public.add_student('00000000-0000-0000-0000-0000000000c1', 'Chidi Okafo', '0803 123 4567', 'device-addaddaddaddadd');
+  r := public.add_student('00000000-0000-0000-0000-0000000000c1', 'Chidi Okafo', '0803 123 4567', 'female', 'adult', 'device-addaddaddaddadd');
   perform pg_temp.assert(r ->> 'status' = 'possible_duplicate', 'similar name -> possible_duplicate, got ' || r::text);
   perform pg_temp.assert(not (r ->> 'exact_match')::boolean, 'fuzzy match is not exact');
   perform pg_temp.assert((select count(*) from public.students) = v_before, 'possible_duplicate inserts nothing');
 
   -- Same name in a different class is not a duplicate.
-  r := public.add_student('00000000-0000-0000-0000-0000000000c2', 'Chidi Okafor', null, 'device-addaddaddaddadd');
+  r := public.add_student('00000000-0000-0000-0000-0000000000c2', 'Chidi Okafor', '0803 000 0000', 'female', 'adult', 'device-addaddaddaddadd');
   perform pg_temp.assert(r ->> 'status' = 'created', 'same name in another class -> created, got ' || r::text);
 
   -- Force: creates and marks present in one step.
-  r := public.add_student('00000000-0000-0000-0000-0000000000c1', 'Chidi Okafo', '+234 803 123 4567', 'device-addaddaddaddadd', true);
+  r := public.add_student('00000000-0000-0000-0000-0000000000c1', 'Chidi Okafo', '+234 803 123 4567', 'female', 'adult', 'device-addaddaddaddadd', true);
   perform pg_temp.assert(r ->> 'status' = 'created', 'forced add -> created, got ' || r::text);
   perform pg_temp.assert(
     exists (select 1 from public.attendance a
@@ -248,29 +248,44 @@ begin
     'self-registered student has created_by = self');
 
   -- A clearly different name goes straight through.
-  r := public.add_student('00000000-0000-0000-0000-0000000000c1', 'Oluwaseun Adewale-Johnson', null, 'device-addaddaddaddadd');
+  r := public.add_student('00000000-0000-0000-0000-0000000000c1', 'Oluwaseun Adewale-Johnson', '0803 000 0000', 'female', 'adult', 'device-addaddaddaddadd');
   perform pg_temp.assert(r ->> 'status' = 'created', 'distinct name -> created, got ' || r::text);
 
   -- Name belonging to a deactivated record.
   begin
-    perform public.add_student('00000000-0000-0000-0000-0000000000c1', 'Old Record', null, 'device-addaddaddaddadd', true);
+    perform public.add_student('00000000-0000-0000-0000-0000000000c1', 'Old Record', '0803 000 0000', 'female', 'adult', 'device-addaddaddaddadd', true);
     raise exception 'ASSERTION FAILED: reused a deactivated record''s name';
   exception when sqlstate 'AW005' then null;
   end;
 
   -- Validation.
   begin
-    perform public.add_student('00000000-0000-0000-0000-0000000000c1', 'A', null, 'device-addaddaddaddadd');
+    perform public.add_student('00000000-0000-0000-0000-0000000000c1', 'A', '0803 000 0000', 'female', 'adult', 'device-addaddaddaddadd');
     raise exception 'ASSERTION FAILED: one-letter name accepted';
   exception when sqlstate 'AW004' then null;
   end;
   begin
-    perform public.add_student('00000000-0000-0000-0000-0000000000c1', 'Valid Name', 'call me', 'device-addaddaddaddadd');
+    perform public.add_student('00000000-0000-0000-0000-0000000000c1', 'Valid Name', 'call me', 'female', 'adult', 'device-addaddaddaddadd');
     raise exception 'ASSERTION FAILED: junk phone accepted';
   exception when sqlstate 'AW004' then null;
   end;
   begin
-    perform public.add_student('00000000-0000-0000-0000-0000000000c3', 'Valid Name', null, 'device-addaddaddaddadd');
+    perform public.add_student('00000000-0000-0000-0000-0000000000c1', 'Valid Name', null, 'female', 'adult', 'device-addaddaddaddadd');
+    raise exception 'ASSERTION FAILED: missing phone accepted';
+  exception when sqlstate 'AW004' then null;
+  end;
+  begin
+    perform public.add_student('00000000-0000-0000-0000-0000000000c1', 'Valid Name', '0803 000 0000', null, 'adult', 'device-addaddaddaddadd');
+    raise exception 'ASSERTION FAILED: missing sex accepted';
+  exception when sqlstate 'AW004' then null;
+  end;
+  begin
+    perform public.add_student('00000000-0000-0000-0000-0000000000c1', 'Valid Name', '0803 000 0000', 'female', 'teen', 'device-addaddaddaddadd');
+    raise exception 'ASSERTION FAILED: unknown age group accepted';
+  exception when sqlstate 'AW004' then null;
+  end;
+  begin
+    perform public.add_student('00000000-0000-0000-0000-0000000000c3', 'Valid Name', '0803 000 0000', 'female', 'adult', 'device-addaddaddaddadd');
     raise exception 'ASSERTION FAILED: added to inactive class';
   exception when sqlstate 'AW002' then null;
   end;

@@ -9,6 +9,9 @@ export type MatrixStudent = {
   /** Lagos calendar date the record was created. */
   createdDate: string;
   className?: string;
+  classId?: string;
+  /** "male" | "female" | null, for the register's Sex column. */
+  gender?: string | null;
 };
 
 export type MatrixMark = { studentId: string; serviceDate: string };
@@ -19,6 +22,8 @@ export type MatrixRow = {
   studentId: string;
   fullName: string;
   className?: string;
+  classId?: string;
+  gender?: string | null;
   isActive: boolean;
   cells: MatrixCell[];
   presentCount: number;
@@ -98,6 +103,8 @@ export function buildAttendanceMatrix(input: {
       studentId: s.id,
       fullName: s.fullName,
       className: s.className,
+      classId: s.classId,
+      gender: s.gender ?? null,
       isActive: s.isActive,
       cells,
       presentCount,

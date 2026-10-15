@@ -47,7 +47,7 @@ begin
   perform pg_temp.assert(r ->> 'status' = 'already_marked', 'capped device re-checking a marked student -> already_marked');
 
   -- add_student counts against the same cap and creates nothing when capped.
-  r := public.add_student('00000000-0000-0000-0000-0000000000c1', 'Zainab Lawal', null, 'parent-phone-0000000001');
+  r := public.add_student('00000000-0000-0000-0000-0000000000c1', 'Zainab Lawal', '0803 000 0000', 'female', 'adult', 'parent-phone-0000000001');
   perform pg_temp.assert(r ->> 'status' = 'device_limit_reached', 'add_student on capped device -> device_limit_reached, got ' || r::text);
   perform pg_temp.assert(r ->> 'full_name' = 'Zainab Lawal', 'add_student cap payload carries the attempted name');
 
@@ -113,7 +113,7 @@ declare
 begin
   r := public.mark_attendance('00000000-0000-0000-0000-0000000005a8', 'parent-phone-0000000001');
   perform pg_temp.assert(r ->> 'status' = 'marked', 'raising the cap to 5 allows a 5th student, got ' || r::text);
-  r := public.add_student('00000000-0000-0000-0000-0000000000c1', 'Zainab Lawal', null, 'parent-phone-0000000001');
+  r := public.add_student('00000000-0000-0000-0000-0000000000c1', 'Zainab Lawal', '0803 000 0000', 'female', 'adult', 'parent-phone-0000000001');
   perform pg_temp.assert(r ->> 'status' = 'device_limit_reached', '6th distinct student rejected at cap 5');
   perform pg_temp.assert((r ->> 'limit')::int = 5, 'payload reflects the new limit');
 end

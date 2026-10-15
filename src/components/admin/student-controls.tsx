@@ -11,6 +11,7 @@ import {
   updateStudent,
 } from "@/app/sundayschool/_actions/students";
 import { Button } from "@/components/ui/button";
+import { AGE_GROUP_OPTIONS, SEX_OPTIONS } from "@/lib/forms/labels";
 
 import { ActionButton, ConfirmButton, DialogForm, SelectField, TextField } from "./forms";
 
@@ -21,6 +22,7 @@ export type AdminStudent = {
   phone: string | null;
   gender: string | null;
   age_group: string | null;
+  entry_date: string | null;
   class_id: string;
   is_active: boolean;
 };
@@ -49,18 +51,28 @@ function StudentFields({
       <TextField name="phone" label="Phone (optional)" type="tel" inputMode="tel" defaultValue={student?.phone ?? ""} error={errors.phone} />
       <div className="grid gap-4 sm:grid-cols-2">
         <SelectField
+          name="ageGroup"
+          label="Age"
+          defaultValue={student?.age_group ?? ""}
+          error={errors.ageGroup}
+          options={[{ value: "", label: "Not recorded" }, ...AGE_GROUP_OPTIONS.map((o) => ({ value: o.value, label: o.label }))]}
+        />
+        <SelectField
           name="gender"
-          label="Gender (optional)"
+          label="Sex"
           defaultValue={student?.gender ?? ""}
           error={errors.gender}
-          options={[
-            { value: "", label: "Not recorded" },
-            { value: "female", label: "Female" },
-            { value: "male", label: "Male" },
-          ]}
+          options={[{ value: "", label: "Not recorded" }, ...SEX_OPTIONS.map((o) => ({ value: o.value, label: o.label }))]}
         />
-        <TextField name="ageGroup" label="Age group (optional)" maxLength={40} defaultValue={student?.age_group ?? ""} error={errors.ageGroup} />
       </div>
+      <TextField
+        name="entryDate"
+        label="Entry date (optional)"
+        type="date"
+        defaultValue={student?.entry_date ?? ""}
+        error={errors.entryDate}
+        hint="Usually set by the class teacher on the registration form."
+      />
     </>
   );
 }

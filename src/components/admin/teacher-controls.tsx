@@ -1,14 +1,16 @@
 "use client";
 
-import { KeyRound, Plus, Shuffle } from "lucide-react";
+import { BadgeCheck, KeyRound, Plus, Shuffle } from "lucide-react";
 
 import {
   createTeacher,
   reassignTeacherClass,
   resetTeacherPassword,
   setTeacherActive,
+  setTeacherTitle,
 } from "@/app/sundayschool/_actions/teachers";
 import { Button } from "@/components/ui/button";
+import { STAFF_TITLE_OPTIONS } from "@/lib/forms/labels";
 
 import { ActionButton, ConfirmButton, DialogForm, PasswordField, SelectField, TextField } from "./forms";
 
@@ -39,6 +41,15 @@ export function CreateTeacherButton({ classes }: { classes: ClassOption[] }) {
             defaultValue=""
             error={errors.classId}
             options={[{ value: "", label: "Choose a class…" }, ...classes.map((c) => ({ value: c.id, label: c.name }))]}
+          />
+          <SelectField
+            name="staffTitle"
+            label="Title"
+            required
+            defaultValue="teacher"
+            error={errors.staffTitle}
+            hint="A class can have several teachers and assistant teachers."
+            options={STAFF_TITLE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
           />
           <PasswordField error={errors.password} />
         </>
@@ -103,6 +114,35 @@ export function ReassignClassButton({
             defaultValue={classId ?? ""}
             error={errors.classId}
             options={classes.map((c) => ({ value: c.id, label: c.name }))}
+          />
+        </>
+      )}
+    </DialogForm>
+  );
+}
+
+export function ChangeTitleButton({ userId, name, staffTitle }: { userId: string; name: string; staffTitle: string }) {
+  return (
+    <DialogForm
+      title={`Change ${name}'s title`}
+      description="Shown on the Teachers and Assistant Teachers Form from now on."
+      action={setTeacherTitle}
+      submitLabel="Save title"
+      trigger={
+        <Button variant="outline">
+          <BadgeCheck aria-hidden /> Change title
+        </Button>
+      }
+    >
+      {(errors) => (
+        <>
+          <input type="hidden" name="userId" value={userId} />
+          <SelectField
+            name="staffTitle"
+            label="Title"
+            defaultValue={staffTitle}
+            error={errors.staffTitle}
+            options={STAFF_TITLE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
           />
         </>
       )}

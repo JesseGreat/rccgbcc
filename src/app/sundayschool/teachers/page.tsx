@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import {
+  ChangeTitleButton,
   CreateTeacherButton,
   ReassignClassButton,
   ResetPasswordButton,
@@ -10,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatMediumDate } from "@/lib/attendance/dates";
 import { localDate } from "@/lib/attendance/format";
 import { requireSuperAdmin } from "@/lib/auth/session";
+import { staffTitleLabel } from "@/lib/forms/labels";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export const metadata: Metadata = { title: "Teachers" };
@@ -18,7 +20,7 @@ export default async function TeachersPage() {
   const { supabase, profile: me } = await requireSuperAdmin();
 
   const [profiles, classes, settings, authUsers] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, email, role, class_id, is_active").order("full_name"),
+    supabase.from("profiles").select("id, full_name, email, role, staff_title, class_id, is_active").order("full_name"),
     supabase.from("classes").select("id, name, is_active").order("name"),
     supabase.from("app_settings").select("timezone").eq("id", 1).single(),
     // Last sign-in lives in auth, readable only with the service role (server-side).
@@ -44,7 +46,9 @@ export default async function TeachersPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold">Teachers</h2>
-          <p className="text-base text-muted-foreground">Each teacher sees only the class they&apos;re assigned to.</p>
+          <p className="text-base text-muted-foreground">
+            Each teacher and assistant teacher sees only the class they&apos;re assigned to. A class can have several.
+          </p>
         </div>
         <CreateTeacherButton classes={activeClasses} />
       </div>
@@ -55,6 +59,7 @@ export default async function TeachersPage() {
             <div className="min-w-0">
               <p className="flex flex-wrap items-center gap-2 text-lg font-bold">
                 {t.full_name || t.email}
+                <Badge variant="outline">{staffTitleLabel(t.staff_title)}</Badge>
                 {!t.is_active && <Badge variant="secondary">Deactivated</Badge>}
               </p>
               <p className="text-base break-all text-muted-foreground">{t.email}</p>
@@ -64,6 +69,7 @@ export default async function TeachersPage() {
             </div>
             <div className="flex flex-wrap gap-2">
               <ReassignClassButton userId={t.id} name={t.full_name} classId={t.class_id} classes={activeClasses} />
+              <ChangeTitleButton userId={t.id} name={t.full_name || t.email || "this teacher"} staffTitle={t.staff_title} />
               <ResetPasswordButton userId={t.id} name={t.full_name || t.email || "this teacher"} />
               <TeacherActiveButton userId={t.id} name={t.full_name || t.email || "this teacher"} active={t.is_active} />
             </div>

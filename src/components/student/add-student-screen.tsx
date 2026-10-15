@@ -3,16 +3,19 @@
 import { ArrowLeft, Check, CircleAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useRef, useState, type FormEvent, type ReactNode, type RefObject } from "react";
 
 import { apiFetch, getDeviceId, saveLastStudent } from "@/lib/attendance/client";
 import type { AddStudentResult, DuplicateMatch } from "@/lib/db/types";
+import { AGE_GROUP_OPTIONS, REGISTRATION_FORM_TITLE, SEX_OPTIONS } from "@/lib/forms/labels";
+import { cn } from "@/lib/utils";
 
 import { MarkOutcomeScreen } from "./mark-outcome";
 import { useMarkAttendance, type MarkOutcome, type MarkTarget } from "./use-mark-attendance";
 
-type AddInput = { fullName: string; phone: string; force: boolean };
-type FieldError = { field: "full_name" | "phone" | "form"; message: string };
+type AddInput = { fullName: string; phone: string; gender: string; ageGroup: string; force: boolean };
+type FieldName = "full_name" | "phone" | "gender" | "age_group";
+type FieldError = { field: FieldName; message: string };
 
 type State =
   | { kind: "form"; error?: FieldError }
@@ -22,12 +25,23 @@ type State =
 
 const PHONE_RE = /^\+?[0-9][0-9 ()-]{5,22}[0-9]$/;
 const NAME_MESSAGE = "Please enter your full name (first and last name).";
-const PHONE_MESSAGE = "Check the phone number. Use digits only, like 0803 123 4567.";
+const PHONE_MESSAGE = "Please enter your phone number, using digits only, like 0803 123 4567.";
+const GENDER_MESSAGE = "Please choose Male or Female.";
+const AGE_GROUP_MESSAGE = "Please choose Adult or Young Adult.";
 
-function validate(fullName: string, phone: string): FieldError | null {
-  const letters = fullName.replace(/[^\p{L}\p{N}]/gu, "");
-  if (letters.length < 2 || fullName.trim().length > 100) return { field: "full_name", message: NAME_MESSAGE };
-  if (phone.trim() && !PHONE_RE.test(phone.trim())) return { field: "phone", message: PHONE_MESSAGE };
+const MESSAGES: Record<FieldName, string> = {
+  full_name: NAME_MESSAGE,
+  phone: PHONE_MESSAGE,
+  gender: GENDER_MESSAGE,
+  age_group: AGE_GROUP_MESSAGE,
+};
+
+function validate(input: Omit<AddInput, "force">): FieldError | null {
+  const letters = input.fullName.replace(/[^\p{L}\p{N}]/gu, "");
+  if (letters.length < 2 || input.fullName.trim().length > 100) return { field: "full_name", message: NAME_MESSAGE };
+  if (!input.ageGroup) return { field: "age_group", message: AGE_GROUP_MESSAGE };
+  if (!input.gender) return { field: "gender", message: GENDER_MESSAGE };
+  if (!PHONE_RE.test(input.phone.trim())) return { field: "phone", message: PHONE_MESSAGE };
   return null;
 }
 
@@ -45,9 +59,13 @@ export function AddStudentScreen({
   const router = useRouter();
   const [fullName, setFullName] = useState(initialName);
   const [phone, setPhone] = useState("");
+  const [gender, setGender] = useState("");
+  const [ageGroup, setAgeGroup] = useState("");
   const [state, setState] = useState<State>({ kind: "form" });
   const nameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
+  const genderRef = useRef<HTMLDivElement>(null);
+  const ageGroupRef = useRef<HTMLDivElement>(null);
   const markMatch = useMarkAttendance();
 
   const goHome = useCallback(() => router.push("/"), [router]);
@@ -63,7 +81,9 @@ export function AddStudentScreen({
         body: JSON.stringify({
           classId,
           fullName: input.fullName,
-          phone: input.phone.trim() || null,
+          phone: input.phone.trim(),
+          gender: input.gender,
+          ageGroup: input.ageGroup,
           deviceId: getDeviceId(),
           force: input.force,
         }),
@@ -94,15 +114,12 @@ export function AddStudentScreen({
 
       const e = res.error;
       switch (e.code) {
-        case "INVALID_INPUT":
-          setState({
-            kind: "form",
-            error:
-              e.detail === "phone"
-                ? { field: "phone", message: PHONE_MESSAGE }
-                : { field: "full_name", message: NAME_MESSAGE },
-          });
+        case "INVALID_INPUT": {
+          const field: FieldName =
+            e.detail === "phone" || e.detail === "gender" || e.detail === "age_group" ? e.detail : "full_name";
+          setState({ kind: "form", error: { field, message: MESSAGES[field] } });
           break;
+        }
         case "NAME_UNAVAILABLE":
           setState({
             kind: "form",
@@ -133,13 +150,16 @@ export function AddStudentScreen({
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
-    const error = validate(fullName, phone);
+    const input = { fullName, phone, gender, ageGroup };
+    const error = validate(input);
     if (error) {
       setState({ kind: "form", error });
-      (error.field === "phone" ? phoneRef : nameRef).current?.focus();
+      const target = { full_name: nameRef, phone: phoneRef, gender: genderRef, age_group: ageGroupRef }[error.field].current;
+      target?.focus();
+      target?.scrollIntoView({ block: "center", behavior: "smooth" });
       return;
     }
-    void submit({ fullName, phone, force: false });
+    void submit({ ...input, force: false });
   };
 
   // A match was tapped: mark that existing student instead of creating anyone.
@@ -245,9 +265,10 @@ export function AddStudentScreen({
 
   return (
     <>
-      <Header title="Add your name" subtitle={className} backHref={`/class/${classId}`} />
-      <main className="safe-px safe-pb mx-auto w-full max-w-lg flex-1 pt-5 pb-10">
-        <p className="text-lg text-muted-foreground">You&apos;ll be marked present straight away.</p>
+      <Header title="Register" subtitle={className} backHref={`/class/${classId}`} />
+      <main className="safe-px safe-pb mx-auto w-full max-w-lg flex-1 animate-fade-in pt-5 pb-10">
+        <h2 className="text-xl leading-snug font-extrabold">{REGISTRATION_FORM_TITLE}</h2>
+        <p className="mt-1 text-lg text-muted-foreground">Fill in every box. You&apos;ll be marked present straight away.</p>
 
         <form onSubmit={onSubmit} noValidate className="mt-6 flex flex-col gap-6">
           <Field
@@ -278,15 +299,27 @@ export function AddStudentScreen({
             />
           </Field>
 
-          <Field
-            id="phone"
-            label={
-              <>
-                Phone number <span className="font-normal text-muted-foreground">(optional)</span>
-              </>
-            }
-            error={error?.field === "phone" ? error.message : undefined}
-          >
+          <ChoiceField
+            id="age-group"
+            label="Age"
+            groupRef={ageGroupRef}
+            options={AGE_GROUP_OPTIONS}
+            value={ageGroup}
+            onChange={setAgeGroup}
+            error={error?.field === "age_group" ? error.message : undefined}
+          />
+
+          <ChoiceField
+            id="gender"
+            label="Sex"
+            groupRef={genderRef}
+            options={SEX_OPTIONS}
+            value={gender}
+            onChange={setGender}
+            error={error?.field === "gender" ? error.message : undefined}
+          />
+
+          <Field id="phone" label="Phone number" error={error?.field === "phone" ? error.message : undefined}>
             <input
               ref={phoneRef}
               id="phone"
@@ -295,6 +328,7 @@ export function AddStudentScreen({
               inputMode="tel"
               autoComplete="tel"
               enterKeyHint="done"
+              required
               maxLength={30}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -311,11 +345,74 @@ export function AddStudentScreen({
             disabled={submitting}
             className="h-14 w-full rounded-2xl bg-primary text-xl font-bold text-primary-foreground shadow-sm active:scale-[0.98] disabled:opacity-70"
           >
-            {submitting ? "Adding…" : "Add me and mark present"}
+            {submitting ? "Registering…" : "Register and mark me present"}
           </button>
         </form>
       </main>
     </>
+  );
+}
+
+/** Big tap-to-choose buttons (a radio group) for short fixed choices. */
+function ChoiceField({
+  id,
+  label,
+  options,
+  value,
+  onChange,
+  error,
+  groupRef,
+}: {
+  id: string;
+  label: string;
+  options: readonly { value: string; label: string }[];
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+  groupRef: RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <div>
+      <p id={`${id}-label`} className="mb-2 block text-lg font-bold">
+        {label}
+      </p>
+      <div
+        ref={groupRef}
+        role="radiogroup"
+        aria-labelledby={`${id}-label`}
+        aria-describedby={error ? `${id}-error` : undefined}
+        aria-invalid={error ? true : undefined}
+        tabIndex={-1}
+        className="grid grid-cols-2 gap-3 focus:outline-none"
+      >
+        {options.map((o) => {
+          const selected = value === o.value;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => onChange(o.value)}
+              className={cn(
+                "flex h-14 items-center justify-center gap-2 rounded-2xl border-2 bg-card px-3 text-lg font-bold shadow-sm transition-all duration-150 active:scale-[0.97]",
+                selected ? "border-primary bg-accent text-primary" : "border-input text-foreground",
+                error && !selected && "border-primary/50",
+              )}
+            >
+              {selected && <Check className="size-5 animate-pop-in" strokeWidth={3} aria-hidden />}
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+      {error && (
+        <p id={`${id}-error`} role="alert" className="mt-2 flex items-start gap-2 text-base font-bold text-primary">
+          <CircleAlert className="mt-0.5 size-5 shrink-0" aria-hidden />
+          {error}
+        </p>
+      )}
+    </div>
   );
 }
 

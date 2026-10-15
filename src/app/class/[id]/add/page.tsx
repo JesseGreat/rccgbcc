@@ -7,7 +7,7 @@ import { ClassClosed } from "@/components/student/class-closed";
 import { ServiceUnavailable } from "@/components/student/service-unavailable";
 import { getClasses } from "@/lib/attendance/rpc";
 
-export const metadata: Metadata = { title: "Add your name" };
+export const metadata: Metadata = { title: "Registration" };
 
 export default async function AddStudentPage(props: PageProps<"/class/[id]/add">) {
   const [{ id }, searchParams] = await Promise.all([props.params, props.searchParams]);

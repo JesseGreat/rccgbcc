@@ -66,6 +66,80 @@ export async function undoMark(studentId: string): Promise<TeacherActionResult> 
   return { ok: true };
 }
 
+// ---------------------------------------------------------------------------
+// Teachers and Assistant Teachers Form: a teacher marks themselves present,
+// only while the window is open. RLS locks every change once it closes.
+// ---------------------------------------------------------------------------
+
+function cleanText(value: string, max: number): string | null | false {
+  const text = value.trim();
+  if (text.length > max) return false;
+  return text || null;
+}
+
+export async function markSelfPresent(input: { topic: string; remarks: string }): Promise<TeacherActionResult> {
+  const topic = cleanText(input.topic, 200);
+  const remarks = cleanText(input.remarks, 500);
+  if (topic === false || remarks === false) {
+    return { ok: false, code: "INVALID_INPUT", message: "Keep the topic under 200 and remarks under 500 characters." };
+  }
+  const { supabase, profile } = await requireTeacher();
+
+  // class, title, date and time are stamped by the database trigger.
+  const { error } = await supabase.from("teacher_attendance").insert({ profile_id: profile.id, topic, remarks });
+
+  refresh();
+  if (!error || error.code === "23505") return { ok: true }; // 23505: already marked
+  if (error.code === "42501") return CLOSED;
+  console.error("[dashboard] markSelfPresent failed", error.code, error.message);
+  return UNAVAILABLE;
+}
+
+export async function updateSelfEntry(input: { topic: string; remarks: string }): Promise<TeacherActionResult> {
+  const topic = cleanText(input.topic, 200);
+  const remarks = cleanText(input.remarks, 500);
+  if (topic === false || remarks === false) {
+    return { ok: false, code: "INVALID_INPUT", message: "Keep the topic under 200 and remarks under 500 characters." };
+  }
+  const { supabase, profile } = await requireTeacher();
+
+  const { data: serviceDate } = await supabase.rpc("current_service_date");
+  if (!serviceDate) return UNAVAILABLE;
+  const { data, error } = await supabase
+    .from("teacher_attendance")
+    .update({ topic, remarks })
+    .eq("profile_id", profile.id)
+    .eq("service_date", serviceDate)
+    .select("id");
+
+  refresh();
+  if (error) {
+    console.error("[dashboard] updateSelfEntry failed", error.code, error.message);
+    return UNAVAILABLE;
+  }
+  return data?.length ? { ok: true } : CLOSED; // RLS hides the row once the window closes
+}
+
+export async function undoSelfMark(): Promise<TeacherActionResult> {
+  const { supabase, profile } = await requireTeacher();
+
+  const { data: serviceDate } = await supabase.rpc("current_service_date");
+  if (!serviceDate) return UNAVAILABLE;
+  const { data, error } = await supabase
+    .from("teacher_attendance")
+    .delete()
+    .eq("profile_id", profile.id)
+    .eq("service_date", serviceDate)
+    .select("id");
+
+  refresh();
+  if (error) {
+    console.error("[dashboard] undoSelfMark failed", error.code, error.message);
+    return UNAVAILABLE;
+  }
+  return data?.length ? { ok: true } : CLOSED;
+}
+
 export async function flagStudent(studentId: string, reason: string): Promise<TeacherActionResult> {
   const trimmed = reason.trim();
   if (!UUID_RE.test(studentId) || trimmed.length < 3 || trimmed.length > 500) {

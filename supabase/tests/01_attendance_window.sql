@@ -73,7 +73,7 @@ begin
   exception when sqlstate 'AW001' then null;
   end;
   begin
-    perform public.add_student('00000000-0000-0000-0000-0000000000c1', 'Brand New', null, 'device-aaaaaaaaaaaaaaaa');
+    perform public.add_student('00000000-0000-0000-0000-0000000000c1', 'Brand New', '0803 000 0000', 'female', 'adult', 'device-aaaaaaaaaaaaaaaa');
     raise exception 'ASSERTION FAILED: add_student succeeded while closed';
   exception when sqlstate 'AW001' then null;
   end;

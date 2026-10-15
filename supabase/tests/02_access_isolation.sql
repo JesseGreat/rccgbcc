@@ -67,9 +67,15 @@ begin
   perform pg_temp.assert(n = 0, 'teacher A cannot update attendance');
 
   -- Students are read-only for teachers.
-  update public.students set full_name = 'Renamed' where id = '00000000-0000-0000-0000-0000000005a3';
+  -- (Teachers may set only the entry date; see 07_forms.sql.)
+  begin
+    update public.students set full_name = 'Renamed' where id = '00000000-0000-0000-0000-0000000005a3';
+    raise exception 'ASSERTION FAILED: teacher A renamed a student';
+  exception when insufficient_privilege then null;
+  end;
+  update public.students set full_name = 'Renamed' where id = '00000000-0000-0000-0000-0000000005b1';
   get diagnostics n = row_count;
-  perform pg_temp.assert(n = 0, 'teacher A cannot update students');
+  perform pg_temp.assert(n = 0, 'teacher A cannot update another class''s students');
   begin
     insert into public.students (class_id, full_name) values ('00000000-0000-0000-0000-0000000000c1', 'Sneaky Add');
     raise exception 'ASSERTION FAILED: teacher A inserted a student';

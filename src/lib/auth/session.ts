@@ -11,6 +11,7 @@ export type StaffProfile = {
   fullName: string;
   email: string | null;
   role: Role;
+  staffTitle: "teacher" | "assistant_teacher";
   classId: string | null;
   className: string | null;
 };
@@ -28,7 +29,7 @@ export const getStaffSession = cache(async () => {
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("id, full_name, email, role, class_id, is_active, classes(name)")
+    .select("id, full_name, email, role, staff_title, class_id, is_active, classes(name)")
     .eq("id", userId)
     .maybeSingle();
 
@@ -43,6 +44,7 @@ export const getStaffSession = cache(async () => {
     fullName: profile.full_name,
     email: profile.email,
     role: profile.role,
+    staffTitle: profile.staff_title,
     classId: profile.class_id,
     className: profile.classes?.name ?? null,
   };

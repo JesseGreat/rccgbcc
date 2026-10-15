@@ -198,7 +198,7 @@ export function SearchScreen({
           className="mx-auto flex h-14 w-full max-w-lg items-center justify-center gap-2 rounded-2xl border-2 border-primary bg-card text-lg font-bold text-primary active:bg-accent"
         >
           <UserPlus className="size-6" aria-hidden />
-          Can&apos;t find your name? Add it
+          Can&apos;t find your name? Register
         </Link>
       </div>
 
